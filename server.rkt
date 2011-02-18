@@ -2,7 +2,7 @@
 
 (require net/url xml srfi/13)
 
-(provide dispatch-table serve get head post put delete)
+(provide dispatch-table serve get head post put delete :404)
 
 ; Interface
 ; =========
