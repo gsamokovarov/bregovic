@@ -33,18 +33,17 @@
             (define query (url-query url))
             (define method-table (hash-ref! dispatch-table method (make-hash)))
             (define method-handler (hash-ref method-table path #f))
-            (displayln (format "~s ~s" method path))
             (if method-handler
               (method-handler query)
               404)))
-        ; reply : string (oneof fixnum string xexpr) stream stream -> #<void>
+        ; reply : string (oneof fixnum string xexpr) stream -> #<void>
         ; Sends response back to the client.
         (define (reply method data-or-code to)
-          (define output 
+          (define output
             (if (number? data-or-code)
               (begin
                 (hash-ref! dispatch-table data-or-code
-                  (if (= data-or-code 404) 
+                  (if (= data-or-code 404)
                     ; The default 404 handler, if one is not specified.
                     (lambda ()
                      `(html
@@ -57,9 +56,9 @@
                            (p ,(format "Unhandled Code: ~s" data-or-code)))))))
                   ; Above we created the procedures, if needed here we just
                   ; execute them.
-                  (if (xexpr? (hash-ref dispatch-table data-or-code))
-                    (xexpr->string (hash-ref dispatch-table data-or-code))
-                    (hash-ref dispatch-table data-or-code)))
+                  (if (xexpr? ((hash-ref dispatch-table data-or-code)))
+                    (xexpr->string ((hash-ref dispatch-table data-or-code)))
+                    ((hash-ref dispatch-table data-or-code))))
               ; If the input is not a "error" code, then it is already processed
               ; data, so we just convert it to string, if needed.
               (if (xexpr? data-or-code)
@@ -69,9 +68,10 @@
                   data-or-code))))
           (define code (if (not (number? data-or-code)) 200 data-or-code))
           ; Send the response to the stream.
-          (display (format "HTTP/1.1 ~s\r\n" data-or-code) to)
+          (display (format "HTTP/1.1 ~s\r\n" code) to)
           (display "Server: Bregovic/0.1 Racket/R6RS\r\n" to)
           (display (format "Content-Length: ~s\r\n" (string-length output)) to)
+          (display "Connection: close\r\n" to)
           (display "\r\n" to)
           (display output to))
         ; handle : stream stream -> #<void>
@@ -103,33 +103,33 @@
   (lambda ()
     (custodian-shutdown-all root-custodian)))
 
-; get : string (lambda : query -> (oneof string xexpr)) hash -> #<void>
+; get : string (lambda : query -> (oneof string xexpr)) -> #<void>
 ; Binds the current GET path and it's handler to the dispatch-table dispatch table.
 (define (get path handler)
   (http-method-helper "GET" path handler dispatch-table))
 
-; head : string (lambda : query -> (oneof string xexpr)) hash -> #<void>
+; head : string (lambda : query -> (oneof string xexpr)) -> #<void>
 ; Binds the current HEAD path and it's handler to the dispatch-table dispatch table.
 (define (head path handler)
   (http-method-helper "HEAD" path handler dispatch-table))
 
-; post : string (lambda : query -> (oneof string xexpr)) hash -> #<void>
+; post : string (lambda : query -> (oneof string xexpr)) -> #<void>
 ; Binds the current POST path and it's handler to the dispatch-table dispatch table.
 (define (post path handler)
   (http-method-helper "POST" path handler dispatch-table))
 
-; put : string (lambda : query -> (oneof string xexpr)) hash -> #<void>
+; put : string (lambda : query -> (oneof string xexpr)) -> #<void>
 ; Binds the current PUT path and it's handler to the dispatch-table dispatch table.
 (define (put path handler)
   (http-method-helper "PUT" path handler dispatch-table))
 
-; delete : string (lambda : query -> (oneof string xexpr)) hash -> #<void>
+; delete : string (lambda : query -> (oneof string xexpr)) -> #<void>
 ; Binds the current DELETE path and it's handler to the dispatch-table dispatch table.
 (define (delete path handler)
   (http-method-helper "DELETE" path handler dispatch-table))
 
-; :404 : (lambda -> (oneof string xexpr)) hash -> #<void>
-(define (:404 handler dispatch-table)
+; :404 : (lambda -> (oneof string xexpr)) -> #<void>
+(define (:404 handler)
   (hash-set! dispatch-table 404 handler))
 
 
